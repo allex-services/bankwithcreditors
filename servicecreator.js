@@ -79,16 +79,19 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
     var creditorextra, ops;
     if (account[0] < amount) {
       creditorextra = creditoraccount[0] + account[0] - amount;
+      console.log('first the superCharge');
       ops = [
         this.superCharge(username, account[0], referencearry),
       ];
       if (creditorextra < 0) {
+        console.log('then chargeCreditor');
         ops.push(this.chargeCreditor(username, creditorextra, referencearry));
       }
       return q.all(ops).spread(
         this.outMoneyChargeSummer.bind(this)
       );
     }
+    console.log('going for superCharge', amount);
     return this.superCharge(username, amount, referencearry);
   };
 
@@ -121,10 +124,26 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
 
   BankWithCreditorsService.prototype.outMoneyChargeSummer = function (mycharge, creditorcharge) {
     console.log('outMoneyChargeSummer', mycharge, creditorcharge);
+    var ret = 0;
+    if (lib.isArray(mycharge) && mycharge.length>1) {
+      ret += mycharge[1];
+    }
+    if (lib.isArray(creditorcharge) && creditorcharge.length>1) {
+      ret += creditorcharge[1];
+    }
+    return q(ret);
   };
 
   BankWithCreditorsService.prototype.inMoneyChargeSummer = function (creditorcharge, mycharge) {
     console.log('inMoneyChargeSummer', creditorcharge, mycharge);
+    var ret = 0;
+    if (lib.isArray(mycharge) && mycharge.length>1) {
+      ret += mycharge[1];
+    }
+    if (lib.isArray(creditorcharge) && creditorcharge.length>1) {
+      ret += creditorcharge[1];
+    }
+    return q(ret);
   };
   
   BankWithCreditorsService.prototype.__cleanUp = function() {
