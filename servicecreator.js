@@ -23,14 +23,24 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
   };
 
   var _creditorsuffix = '_creditor',
+    _debtsuffix = '_debt',
     _creditorsuffixlength = _creditorsuffix.length;
 
   BankWithCreditorsService.prototype.readCreditor = function (username) {
     return this.readAccountWDefault(username+_creditorsuffix, [0]);
   };
 
+  BankWithCreditorsService.prototype.readDebt = function (username) {
+    console.log('readDebt', username, _debtsuffix);
+    return this.readAccountWDefault(username+_debtsuffix, [0]);
+  };
+
   BankWithCreditorsService.prototype.chargeCreditor = function(username, amount, referencearry) {
     return this.superCharge(username+_creditorsuffix, amount, referencearry);
+  };
+
+  BankWithCreditorsService.prototype.chargeDebt = function(username, amount, referencearry) {
+    return this.superCharge(username+_debtsuffix, amount, referencearry);
   };
 
   BankWithCreditorsService.prototype.readAccount = function (username) {
@@ -56,6 +66,13 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
       this.readCreditor(username)
     ]).spread(cb);
   };
+  BankWithCreditorsService.prototype.readAll = function (username, cb) {
+    return q.all([
+      this.readAccountWDefault(username, [0]),
+      this.readCreditor(username),
+      this.readDebt(username)
+    ]).spread(cb);
+  };
   BankWithCreditorsService.prototype.charge = function (username, amount, referencearry) {
     try {
       //console.log('charge!, username', username, 'amount', amount);
@@ -75,29 +92,29 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
   };
 
   BankWithCreditorsService.prototype.accountChecker = function (username, amount, referencearry, account, creditoraccount) {
-    console.log('accountChecker, username', username, 'amount', amount, 'account', account, 'creditoraccount', creditoraccount);
-    var fromcreditor, ops;
+    //console.log('accountChecker, username', username, 'amount', amount, 'account', account, 'creditoraccount', creditoraccount);
+    var ops, fromcreditor, fromdebt;
     if (account[0] < amount) {
       fromcreditor = amount - account[0];
       if (fromcreditor > creditoraccount[0]) {
         fromcreditor = creditoraccount[0];
       }
+      fromdebt = amount - account[0] - fromcreditor;
       ops = [];
       if (account[0]) {
-        console.log('superCharge');
         ops.push(this.superCharge(username, account[0], referencearry));
       };
       if (fromcreditor > 0) {
-        console.log('creditor');
         ops.push(this.chargeCreditor(username, fromcreditor, referencearry));
+        ops.push(this.chargeDebt(username, -fromcreditor, referencearry));
       }
-      console.log('debt');
-      ops.push(this.chargeCreditor
+      if (fromdebt > 0) {
+        ops.push(this.chargeDebt(username, -fromdebt, referencearry));
+      }
       return q.all(ops).spread(
         this.outMoneyChargeSummer.bind(this)
       );
     }
-    console.log('going for superCharge', amount);
     return this.superCharge(username, amount, referencearry);
   };
 
@@ -160,12 +177,7 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
     if (amount < 0) {
       return q.reject(new lib.Error('AMOUNT_FOR_ENSURE_CANNOT_BE_NEGATIVE', amount));
     }
-    return q.all([
-      this.readAccountWDefault(username, [0]),
-      this.readCreditor(username)
-    ]).spread(
-      this.onAccountForEnsure.bind(this, username, amount, referencearry)
-    );
+    return this.readBoth(username, this.onAccountForEnsure.bind(this, username, amount, referencearry));
   };
 
   BankWithCreditorsService.prototype.onAccountForEnsure = function (username, amount, referencearry, myaccount, creditoraccount) {
@@ -173,9 +185,19 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
     var mymoney = myaccount[0],
       creditormoney = creditoraccount[0],
       totalmoney = mymoney + creditormoney,
-      missing = amount-totalmoney;
+      missing = amount-totalmoney,
+      ops = [];
+    console.log('onAccountForEnsure', amount, mymoney, creditormoney, 'missing', missing);
     if (missing > 0) {
-      return this.chargeCreditor(username, -missing, referencearry).then(qlib.returner(amount));
+      ops.push(this.chargeCreditor(username, -missing, referencearry));
+    }
+    if (missing < 0) {
+      if (-missing < creditormoney) {
+        ops.push(this.chargeCreditor(username, -missing, referencearry));
+      }
+    }
+    if (ops.length) {
+      return q.all(ops).then(qlib.returner(amount));
     } else {
       return q(amount);
     }
