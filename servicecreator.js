@@ -76,17 +76,23 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
 
   BankWithCreditorsService.prototype.accountChecker = function (username, amount, referencearry, account, creditoraccount) {
     console.log('accountChecker, username', username, 'amount', amount, 'account', account, 'creditoraccount', creditoraccount);
-    var creditorextra, ops;
+    var fromcreditor, ops;
     if (account[0] < amount) {
-      creditorextra = creditoraccount[0] + account[0] - amount;
-      console.log('first the superCharge');
-      ops = [
-        this.superCharge(username, account[0], referencearry),
-      ];
-      if (creditorextra < 0) {
-        console.log('then chargeCreditor');
-        ops.push(this.chargeCreditor(username, creditorextra, referencearry));
+      fromcreditor = amount - account[0];
+      if (fromcreditor > creditoraccount[0]) {
+        fromcreditor = creditoraccount[0];
       }
+      ops = [];
+      if (account[0]) {
+        console.log('superCharge');
+        ops.push(this.superCharge(username, account[0], referencearry));
+      };
+      if (fromcreditor > 0) {
+        console.log('creditor');
+        ops.push(this.chargeCreditor(username, fromcreditor, referencearry));
+      }
+      console.log('debt');
+      ops.push(this.chargeCreditor
       return q.all(ops).spread(
         this.outMoneyChargeSummer.bind(this)
       );
