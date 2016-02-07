@@ -194,6 +194,8 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
     if (missing < 0) {
       if (-missing < creditormoney) {
         ops.push(this.chargeCreditor(username, -missing, referencearry));
+      } else {
+        ops.push(this.chargeCreditor(username, creditormoney, referencearry));
       }
     }
     if (ops.length) {
