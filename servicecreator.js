@@ -220,10 +220,10 @@ function createBankWithCreditorsService(execlib, ParentServicePack) {
 
   BankWithCreditorsService.prototype.estimator = function (amountdelta, myaccount, creditoraccount) {
     var extra = amountdelta - creditoraccount[0];
-    if (extra < 0) {
+    if (amountdelta < creditoraccount[0]) {
       return [creditoraccount[0] + myaccount[0]];
     }
-    return [creditoraccount[0] + myaccount[0] + extra];
+    return [myaccount[0] + amountdelta];
   };
 
   BankWithCreditorsService.prototype.isAccount = function (item) {
