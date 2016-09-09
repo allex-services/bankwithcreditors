@@ -1,9 +1,8 @@
-function createBankWithCreditorsService(execlib, ParentServicePack) {
+function createBankWithCreditorsService(execlib, ParentService) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
-    qlib = lib.qlib,
-    ParentService = ParentServicePack.Service;
+    qlib = lib.qlib;
 
   function factoryCreator(parentFactory) {
     return {
