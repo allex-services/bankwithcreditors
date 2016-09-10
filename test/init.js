@@ -1,8 +1,7 @@
-function instantiateService(cb, execlib, bwcservicepack) {
+function instantiateService(cb, execlib, Service) {
   var lib = execlib.lib,
     q = lib.q,
     qlib = lib.qlib,
-    Service = bwcservicepack.Service,
     d = q.defer(),
     service = new Service({path: 'bank', __readyToAcceptUsers: d});
 
@@ -13,8 +12,8 @@ function instantiateService(cb, execlib, bwcservicepack) {
 }
 
 function init(cb, execlib) {
-  execlib.execSuite.registry.register('allex_bankwithcreditorsservice').then(
-    instantiateService.bind(null, cb, execlib),
+  execlib.loadDependencies('server', ['allex:bankwithcreditors'], instantiateService.bind(null, cb, execlib)).then(
+    null,
     process.exit.bind(process, 1)
   );
 }
