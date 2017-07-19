@@ -3,7 +3,7 @@ function createServicePack(execlib) {
 
   return {
     service: {
-      dependencies: ['allex:bank', 'allex:leveldbbankwithcreditors:lib']
+      dependencies: ['allex:bank', 'allex_leveldbbankwithcreditorslib']
     },
     sinkmap: {
       dependencies: ['allex:bank']
